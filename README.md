@@ -2,7 +2,7 @@
 
 _**This script assumes that the Installation of Fedora32 is a fresh install. If you tried to change the GDM background with someother scripts, you first need to reset those changes. Other scripts may have the option --reset.**_
 
-_**Warning: Not yet tested for all the bad scenarios.. If you encounter any problems after running this script..
+_**Recovery from fatal errors: If you encounter any problems after running this script..
 log on to any tty**_
 ````
 sudo rm /usr/share/gnome-shell/gnome-shell-theme.gresource
