@@ -1,0 +1,141 @@
+#!/bin/bash
+
+ID=$(cat /etc/os-release | grep ^ID | cut -d = -f 2)
+VERSION_ID=$(cat /etc/os-release | grep VERSION_ID | cut -d = -f 2)
+
+if [ "$ID" == "fedora" ] && [ "$VERSION_ID" == "32" ]
+
+then
+source="/usr/share/gnome-shell/gnome-shell-theme.gresource"
+backup=$source.BACKUP
+else
+echo "
+----------------------------------------
+Sorry, Script is only for Fedora 32
+Exiting...
+----------------------------------------"
+exit 1
+fi
+
+pkg=$(dnf list installed | grep glib2-devel > /dev/null && echo "yes" || echo "no")
+if [ "$pkg" == "no" ]
+then
+echo "
+-----------------------------------------------------------------------------------------------------
+Sorry, the package 'glib2-devel' is not installed. Install the package and then run this Script.
+For now, Exiting...
+-----------------------------------------------------------------------------------------------------"
+exit 1
+fi
+
+############################################################################################
+case "$1" in ###############################################################################
+############################################################################################
+--help | '') ###############################################################################
+############################################################################################
+echo "Use the options /absolute/Image/path or valid 'HEXColorCode' like below
+		example 1: sudo ./fedora32-login /home/admin/mybg.jpg
+		example 2: sudo ./fedora32-login \#245678"
+exit 1
+;;
+############################################################################################
+--reset) ###################################################################################
+############################################################################################
+
+if ! [ -f $backup ]
+then
+echo "
+-----------------------------------------------------------------------------
+No need, Already Reset. (or unlikely background is not set using this Script.)
+-----------------------------------------------------------------------------"
+exit 1
+elif [ "$UID" != "0" ]
+then
+echo "This Script must be run with sudo"
+exit 1
+else
+rm $source
+mv $backup $source
+echo "
+				     		---------------
+						|Reset Success|
+						---------------
+				Changes will be effective after a Reboot"
+exit 1
+fi
+;;
+esac
+
+if [ "$UID" != "0" ]
+then
+echo "This Script must be run with sudo"
+exit 1
+fi
+
+cd /tmp
+
+if ! [ -f "$1" ] && ! [[ $1 =~ ^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$ ]]
+then
+echo "provided option '$1' is niether valid /absolute/Image/path nor valid 'HEX Color Code'
+Exiting without any changes.."
+exit 1
+fi
+
+if [ -f "$1" ]
+then
+color='#042820'
+img=$(basename $1)
+else
+color=$1
+fi
+
+# take backup of original resource file
+if ! [ -f $backup ]
+then
+cp $source $backup;
+fi
+
+for a in $(gresource list $backup); do
+    b="${a/#\/org\/gnome\/shell\/}"
+    mkdir -p $(dirname $b)
+    gresource extract $backup $a > $b
+done
+
+cd theme
+mv gnome-shell.css original.css
+install -D /dev/null gnome-shell.css
+
+echo '@import url("resource:///org/gnome/shell/theme/original.css");
+  #lockDialogGroup {
+  background: '$color' url('$img');
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center; }' > gnome-shell.css
+  
+if [ -f "$1" ]
+then
+cp $1 .
+fi
+
+cd ..
+
+FILES=$(find "theme" -type f -printf "%P\n" | xargs -i echo "    <file>{}</file>")
+
+cat <<EOF >"theme/gnome-shell-theme.gresource.xml"
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="/org/gnome/shell/theme">
+$FILES
+  </gresource>
+</gresources>
+EOF
+
+cd theme
+glib-compile-resources gnome-shell-theme.gresource.xml
+rm $source
+mv gnome-shell-theme.gresource $source
+echo "
+				     		---------
+						|Success|
+						---------
+				  Changes will be effective after a Reboot"
