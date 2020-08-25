@@ -31,3 +31,7 @@ to set the background with color
 
 to reset everything that the script made..  
 `sudo ./fedora32-login --reset`
+
+![Black Color](https://i.imgur.com/RA00k0D.png)
+
+![Background as Image](https://i.imgur.com/4IK7T9a.png)
